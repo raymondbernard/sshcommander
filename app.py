@@ -76,32 +76,6 @@ def create_ssh_client(hostname, port, username, password=None, key_filename=None
     except paramiko.AuthenticationException:
         st.error("Authentication failed, please verify your credentials")
         return None
-    
-    # Check if password change is required and handle it for ubuntu user
-    if username == "ubuntu" and password == "nvidia":
-        shell = ssh_client.invoke_shell(term='vt100', width=80, height=24)
-        shell.settimeout(10)
-        try:
-            shell.recv(1000)
-            shell.send("echo Password change required, changing password...\n")
-            time.sleep(1)
-            shell.send(f"{password}\n")
-            time.sleep(1)
-            new_password = "ubuntunvidia"
-            shell.send(f"{new_password}\n")
-            time.sleep(1)
-            shell.send(f"{new_password}\n")
-            time.sleep(1)
-            output = shell.recv(1000).decode()
-            if "successfully" in output.lower():
-                st.success("Password changed successfully!")
-            else:
-                st.error("Failed to change password. Please check the server's requirements for password complexity.")
-        except Exception as e:
-            st.error(f"An error occurred while changing the password: {str(e)}")
-        finally:
-            shell.close()
-    
     return ssh_client
 
 def run_commands(ssh_client, server):
@@ -123,6 +97,7 @@ def run_commands(ssh_client, server):
     time.sleep(0.5)
     output = shell.recv(10000).decode()
     st.text(output)
+    shell.close()
 
 # Save configuration
 def save_config():

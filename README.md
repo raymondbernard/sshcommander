@@ -1,83 +1,47 @@
 # SSH Commander
 
-## Overview
+SSH Commander is a Streamlit-based application that facilitates the configuration and testing of servers or network devices via SSH. It provides a user-friendly interface to input server details, commands to be executed, and also to execute these commands directly from the application.
 
-SSH Commander is a web-based application built to simplify the process of configuring network devices via SSH. The application is powered by Streamlit, offering a user-friendly interface to input server details, SSH credentials, and a list of configuration commands. Once the data is inputted, SSH Commander establishes SSH connections to the specified servers and executes the provided commands in sequence.
+## Purpose
 
-## Features
+The main purpose of SSH Commander is to simplify the process of configuring and testing servers. It allows users to:
 
-- **SSH Connection**: Establish a secure connection to an initial server using SSH.
-- **Server Configuration Management**: Add, edit, and delete server configurations with ease.
-- **Batch Command Execution**: Execute a list of commands on each configured server through the initial SSH connection.
-- **Configuration Saving and Loading**: Save server configurations to a JSON file and load them back when needed.
+- Add, edit, and delete server configurations.
+- Execute a series of commands on multiple servers.
+- Add, edit, and delete test configurations.
+- Execute a series of test commands on multiple servers.
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.6 or higher
-- pip (Python package installer)
-
-### Steps
-
-1. **Clone the Repository**:
-
-    ```bash
-    git clone https://github.com/raymondbernard/sshcommander.git
-    cd sshcommander
-    ```
-
-2. **Create a Virtual Environment** (Optional but recommended):
-
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
-
-3. **Install Requirements**:
-
-    ```bash
-    pip install -r requirements.txt
-    ```
+1. Ensure that you have Python installed on your machine. If not, download and install Python from [python.org](https://www.python.org/).
+2. Download or clone this repository to your local machine.
+3. Navigate to the project directory in your terminal or command prompt.
+4. Run the command `pip install -r requirements.txt` to install the required packages.
+5. Start the Streamlit application by running `streamlit run app.py`.
 
 ## Usage
 
-1. **Run the Application**:
+### Configuration
 
-    ```bash
-    streamlit run app.py
-    ```
+1. Expand the "SSH Connection Information" section and input the details of the original server through which you will SSH into other servers or devices.
+2. Expand the "Configuration" section to add, edit, or delete server configurations.
+   - Click on "Add / Edit a Server" to input the server address, username, and the commands to be executed.
+   - Use the "Save Server" button to save the configuration.
+   - Use the "Edit" and "Delete" buttons to modify or remove existing server configurations.
+3. Click the "Start Configuration" button to execute the commands on all configured servers.
 
-    This will start the Streamlit server and the application will open in your default web browser.
+### Testing
 
-2. **Configure SSH Connection**: Input the necessary details for the initial SSH connection in the "SSH Connection Information" section.
-
-3. **Manage Server Configurations**: Use the "Add / Edit a Server" section to input details for each server you want to configure. Multiple servers can be added, and existing configurations can be edited or deleted.
-
-4. **Execute Commands**: Click "Start Configuration" to initiate the SSH connections and execute the commands on each configured server.
-
-5. **View Output**: Check the output of the commands directly in the Streamlit interface.
-
-6. **Modify Configurations**: Utilize the "Edit" and "Delete" buttons next to each server in the "Added Servers" section to change or remove server configurations.
-
-## Notes
-
-- Ensure that the initial server has SSH access to the other servers.
-- The SSH private key file for the initial connection must be accessible by the application.
-- The application is designed to handle password changes for new Ubuntu server installations (username: ubuntu, password: nvidia).
-- Server configurations are persisted to a `config.json` file, which can be backed up or manually edited if necessary.
-
-## Contributing
-
-Feel free to fork the repository, make improvements, and submit a pull request. Any contributions to enhance SSH Commander are welcomed.
+1. Expand the "Testing" section to add, edit, or delete test configurations.
+   - Click on "Add / Edit a Test" to input the server address, username, and the test commands to be executed.
+   - Use the "Save Server" button to save the test configuration.
+   - Use the "Edit" and "Delete" buttons to modify or remove existing test configurations.
+2. Click the "Start Testing" button to execute the test commands on all configured tests. This can be particularly useful for running an entire test suite after configurations.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-
-This README provides a comprehensive guide for installing, running, and contributing to the SSH Commander application. Make sure to place this README in the root directory of your project.
 
 By Raymond Bernard
 ray.bernard@outlook.com

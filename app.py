@@ -138,10 +138,10 @@ def server_input_form(servers, editing_index, key, title, save_function):
     with st.form(key=key):
         st.subheader(title)
         editing_server = servers[editing_index] if editing_index is not None else {}
-        address = st.text_input("Address", value=editing_server.get("address", ""))
-        server_username = st.text_input("Username", value=editing_server.get("username", ""))
-        server_password = st.text_input("Password (optional)", type="password", value=editing_server.get("password", ""))
-        commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", [])))
+        address = st.text_input("Address", value=editing_server.get("address", "")).strip()
+        server_username = st.text_input("Username", value=editing_server.get("username", "")).strip()
+        server_password = st.text_input("Password (optional)", type="password", value=editing_server.get("password", "")).strip()
+        commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", []))).strip()
         submit_button = st.form_submit_button("Save Server")
 
     if submit_button:
@@ -149,18 +149,18 @@ def server_input_form(servers, editing_index, key, title, save_function):
             "address": address,
             "username": server_username,
             "password": server_password,
-            "commands": commands.split('\n')  # Split commands by line
+            "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]  # Split commands by line and remove leading/trailing spaces
         }
         if editing_index is not None:
             servers[editing_index] = server_info
-            editing_index = None
+            st.session_state.editing_index = None
         else:
             servers.append(server_info)
         save_function()
         st.success("Server saved successfully!")
 
-# Display servers or tests
-def display_servers(servers, editing_index_key, editing_index, delete_function, rerun_function):
+# Display added servers
+def display_servers(servers, editing_index_key, section, delete_function, rerun_function):
     to_delete = st.empty()  # Placeholder for delete buttons
     for i, server in enumerate(servers):
         st.write(f"Server {i+1}: {server['address']}")
@@ -170,20 +170,24 @@ def display_servers(servers, editing_index_key, editing_index, delete_function, 
             st.text(command)
         with st.container():
             col1, col2 = st.columns([1, 1])
-            if col1.button("Edit", key=f"edit{i}"):
-                st.session_state[editing_index_key] = i
-                rerun_function()
-            if col2.button("Delete", key=f"delete{i}"):
-                del servers[i]
-                delete_function()
-                rerun_function()
+            edit_button = col1.button("Edit", key=f"edit_{section}_{i}")
+            delete_button = col2.button("Delete", key=f"delete_{section}_{i}")
+            
+        if edit_button:
+            st.session_state[editing_index_key] = i
+            rerun_function()
+            
+        if delete_button:
+            del servers[i]
+            delete_function()
+            rerun_function()
         st.write("---")
 
 # Configuration Section
 server_input_form(st.session_state.servers, st.session_state.editing_index, 'server_form', "Add / Edit a Server", save_config)
 
 with st.expander("Added Servers"):
-    display_servers(st.session_state.servers, 'editing_index', st.session_state.editing_index, save_config, st.experimental_rerun)
+    display_servers(st.session_state.servers, 'editing_index', 'config', save_config, st.experimental_rerun)
 
 # Action Button for Configuration
 if st.button("Start Configuration"):
@@ -213,7 +217,7 @@ st.subheader("Testing")
 server_input_form(st.session_state.tests, st.session_state.editing_test_index, 'test_form', "Add / Edit a Test", save_tests)
 
 with st.expander("Added Tests"):
-    display_servers(st.session_state.tests, 'editing_test_index', st.session_state.editing_test_index, save_tests, st.experimental_rerun)
+    display_servers(st.session_state.tests, 'editing_test_index', 'test', save_tests, st.experimental_rerun)
 
 # Action Button for Testing
 if st.button("Start Testing"):

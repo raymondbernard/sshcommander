@@ -9,8 +9,6 @@ SSH Commander is a web-based application built to simplify the process of config
 - **SSH Connection**: Establish a secure connection to an initial server using SSH.
 - **Server Configuration Management**: Add, edit, and delete server configurations with ease.
 - **Batch Command Execution**: Execute a list of commands on each configured server through the initial SSH connection.
-- **Interactive Web Interface**: Leverage Streamlit’s web interface for a seamless user experience.
-- **Password Change Assistance**: Automatically handle password change requirements for new Ubuntu server installations.
 - **Configuration Saving and Loading**: Save server configurations to a JSON file and load them back when needed.
 
 ## Installation

@@ -19,11 +19,16 @@ if 'key_filename_path' not in st.session_state:
     st.session_state.key_filename_path = None
 if 'servers' not in st.session_state:
     st.session_state.servers = []
+if 'tests' not in st.session_state:
+    st.session_state.tests = []
 if 'editing_index' not in st.session_state:
     st.session_state.editing_index = None
+if 'editing_test_index' not in st.session_state:
+    st.session_state.editing_test_index = None
 
-# File to store the configuration
+# Files to store the configuration and tests
 config_file = "config.json"
+test_file = "test.json"
 
 # Load existing configuration
 def load_config():
@@ -35,7 +40,15 @@ def load_config():
             st.session_state.port = data.get("port", 22)
             st.session_state.username = data.get("username", "")
 
+# Load existing tests
+def load_tests():
+    if os.path.exists(test_file):
+        with open(test_file, "r") as f:
+            data = json.load(f)
+            st.session_state.tests = data.get("tests", [])
+
 load_config()
+load_tests()
 
 # SSH Connection Information
 with st.expander("SSH Connection Information"):
@@ -110,33 +123,42 @@ def save_config():
     with open(config_file, "w") as f:
         json.dump(data, f)
 
-# Server Information Input
-with st.form(key='server_form'):
-    st.subheader("Add / Edit a Server")
-    editing_server = st.session_state.servers[st.session_state.editing_index] if st.session_state.editing_index is not None else {}
-    address = st.text_input("Address", value=editing_server.get("address", ""))
-    server_username = st.text_input("Username", value=editing_server.get("username", ""))
-    commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", [])))
-    submit_button = st.form_submit_button("Save Server")
-
-if submit_button:
-    server_info = {
-        "address": address,
-        "username": server_username,
-        "commands": commands.split('\n')  # Split commands by line
+# Save tests
+def save_tests():
+    data = {
+        "tests": st.session_state.tests
     }
-    if st.session_state.editing_index is not None:
-        st.session_state.servers[st.session_state.editing_index] = server_info
-        st.session_state.editing_index = None
-    else:
-        st.session_state.servers.append(server_info)
-    save_config()
-    st.success("Server saved successfully!")
+    with open(test_file, "w") as f:
+        json.dump(data, f)
 
-# Display added servers
-with st.expander("Added Servers"):
+# Server Information Input
+def server_input_form(servers, editing_index, key, title, save_function):
+    with st.form(key=key):
+        st.subheader(title)
+        editing_server = servers[editing_index] if editing_index is not None else {}
+        address = st.text_input("Address", value=editing_server.get("address", ""))
+        server_username = st.text_input("Username", value=editing_server.get("username", ""))
+        commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", [])))
+        submit_button = st.form_submit_button("Save Server")
+
+    if submit_button:
+        server_info = {
+            "address": address,
+            "username": server_username,
+            "commands": commands.split('\n')  # Split commands by line
+        }
+        if editing_index is not None:
+            servers[editing_index] = server_info
+            editing_index = None
+        else:
+            servers.append(server_info)
+        save_function()
+        st.success("Server saved successfully!")
+
+# Display servers or tests
+def display_servers(servers, editing_index_key, editing_index, delete_function, rerun_function):
     to_delete = st.empty()  # Placeholder for delete buttons
-    for i, server in enumerate(st.session_state.servers):
+    for i, server in enumerate(servers):
         st.write(f"Server {i+1}: {server['address']}")
         st.write(f"Username: {server['username']}")
         st.write("Commands:")
@@ -145,15 +167,25 @@ with st.expander("Added Servers"):
         with st.container():
             col1, col2 = st.columns([1, 1])
             if col1.button("Edit", key=f"edit{i}"):
-                st.session_state.editing_index = i
-                st.experimental_rerun()
+                st.session_state[editing_index_key] = i
+                rerun_function()
             if col2.button("Delete", key=f"delete{i}"):
-                del st.session_state.servers[i]
-                save_config()
-                st.experimental_rerun()
+                del servers[i]
+                delete_function()
+                rerun_function()
         st.write("---")
 
-# Action Button
+# Configuration Section
+with st.expander("Configuration"):
+    server_input_form(st.session_state.servers, st.session_state.editing_index, 'server_form', "Add / Edit a Server", save_config)
+    display_servers(st.session_state.servers, 'editing_index', st.session_state.editing_index, save_config, st.experimental_rerun)
+
+# Testing Section
+with st.expander("Testing"):
+    server_input_form(st.session_state.tests, st.session_state.editing_test_index, 'test_form', "Add / Edit a Test", save_tests)
+    display_servers(st.session_state.tests, 'editing_test_index', st.session_state.editing_test_index, save_tests, st.experimental_rerun)
+
+# Action Button for Configuration
 if st.button("Start Configuration"):
     with st.spinner("Configuring devices..."):
         try:
@@ -170,6 +202,29 @@ if st.button("Start Configuration"):
                 run_commands(original_ssh_client, server)
 
             st.success("Configuration completed successfully!")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+        finally:
+            if 'original_ssh_client' in locals() and original_ssh_client is not None:
+                original_ssh_client.close()
+
+# Action Button for Testing
+if st.button("Start Testing"):
+    with st.spinner("Testing devices..."):
+        try:
+            # Create SSH client to the original server
+            original_ssh_client = create_ssh_client(st.session_state.hostname, st.session_state.port, st.session_state.username, password, st.session_state.key_filename_path)
+
+            if original_ssh_client is None:
+                st.error("Failed to create SSH client to the original server.")
+                st.stop()
+
+            # Run commands on each server through the original server
+            for test in st.session_state.tests:
+                st.write(f"Testing {test['address']} through {st.session_state.hostname}...")
+                run_commands(original_ssh_client, test)
+
+            st.success("Testing completed successfully!")
         except Exception as e:
             st.error(f"An error occurred: {e}")
         finally:

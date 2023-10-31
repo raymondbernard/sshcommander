@@ -5,8 +5,8 @@ import json
 import time
 
 # Streamlit App Title and Description
-st.title("Network Device Configuration Tool")
-st.write("This tool helps to configure network devices via SSH. Please provide the necessary information below to get started.")
+st.title("SSH Commander Tool")
+st.write("This tool helps to configure server/network devices via SSH. Please provide the necessary information below to get started.")
 
 # Initialize session state variables
 if 'hostname' not in st.session_state:
@@ -19,6 +19,8 @@ if 'key_filename_path' not in st.session_state:
     st.session_state.key_filename_path = None
 if 'servers' not in st.session_state:
     st.session_state.servers = []
+if 'editing_index' not in st.session_state:
+    st.session_state.editing_index = None
 
 # File to store the configuration
 config_file = "config.json"
@@ -115,7 +117,7 @@ def run_commands(ssh_client, server):
 
     for command in commands:
         shell.send(f"{command}\n")
-        time.sleep(5)  # wait for 10 seconds for the command to execute
+        time.sleep(10)  # wait for 10 seconds for the command to execute
 
     shell.send("exit\n")  # exit from the SSH session to the target server
     time.sleep(0.5)
@@ -135,11 +137,12 @@ def save_config():
 
 # Server Information Input
 with st.form(key='server_form'):
-    st.subheader("Add a Server")
-    address = st.text_input("Address")
-    server_username = st.text_input("Username")
-    commands = st.text_area("Commands (one per line)")
-    submit_button = st.form_submit_button("Add Server")
+    st.subheader("Add / Edit a Server")
+    editing_server = st.session_state.servers[st.session_state.editing_index] if st.session_state.editing_index is not None else {}
+    address = st.text_input("Address", value=editing_server.get("address", ""))
+    server_username = st.text_input("Username", value=editing_server.get("username", ""))
+    commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", [])))
+    submit_button = st.form_submit_button("Save Server")
 
 if submit_button:
     server_info = {
@@ -147,9 +150,13 @@ if submit_button:
         "username": server_username,
         "commands": commands.split('\n')  # Split commands by line
     }
-    st.session_state.servers.append(server_info)
+    if st.session_state.editing_index is not None:
+        st.session_state.servers[st.session_state.editing_index] = server_info
+        st.session_state.editing_index = None
+    else:
+        st.session_state.servers.append(server_info)
     save_config()
-    st.success("Server added successfully!")
+    st.success("Server saved successfully!")
 
 # Display added servers
 with st.expander("Added Servers"):
@@ -160,13 +167,16 @@ with st.expander("Added Servers"):
         st.write("Commands:")
         for command in server['commands']:
             st.text(command)
+        with st.container():
+            col1, col2 = st.columns([1, 1])
+            if col1.button("Edit", key=f"edit{i}"):
+                st.session_state.editing_index = i
+                st.experimental_rerun()
+            if col2.button("Delete", key=f"delete{i}"):
+                del st.session_state.servers[i]
+                save_config()
+                st.experimental_rerun()
         st.write("---")
-    if st.session_state.servers:
-        delete_index = to_delete.selectbox("Select a server to delete", options=range(1, len(st.session_state.servers) + 1), format_func=lambda x: st.session_state.servers[x - 1]['address'])
-        if st.button("Delete Selected Server"):
-            del st.session_state.servers[delete_index - 1]
-            save_config()
-            st.experimental_rerun()
 
 # Action Button
 if st.button("Start Configuration"):

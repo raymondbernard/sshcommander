@@ -15,6 +15,8 @@ if 'port' not in st.session_state:
     st.session_state.port = 22
 if 'username' not in st.session_state:
     st.session_state.username = ''
+if 'password' not in st.session_state:
+    st.session_state.password = ''
 if 'key_filename_path' not in st.session_state:
     st.session_state.key_filename_path = None
 if 'servers' not in st.session_state:
@@ -55,7 +57,7 @@ with st.expander("SSH Connection Information"):
     st.session_state.port = st.number_input("Port (Original Server)", min_value=1, max_value=65535, value=st.session_state.port)
     st.session_state.username = st.text_input("Username (Original Server)", st.session_state.username)
     key_filename = st.file_uploader("Private Key File (Original Server)", type=['pem'])
-    password = st.text_input("Password (Original Server, if required)", type="password", help="Leave empty if using a private key")
+    st.session_state.password = st.text_input("Password (Original Server, if required)", type="password", help="Leave empty if using a private key")
 
 # Function to handle file upload and save it temporarily
 def save_uploaded_file(uploaded_file):
@@ -76,9 +78,12 @@ if key_filename is not None:
 # SSH Functions
 def create_ssh_client(hostname, port, username, password=None, key_filename=None):
     ssh_client = paramiko.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # Automatically add the server's host key without confirmation
     try:
         if key_filename:
+            if not os.path.exists(key_filename):
+                st.error("Private key file not found.")
+                return None
             ssh_client.connect(hostname, port=port, username=username, key_filename=key_filename, look_for_keys=False, allow_agent=False)
         elif password:
             ssh_client.connect(hostname, port=port, username=username, password=password, look_for_keys=False, allow_agent=False)
@@ -88,7 +93,12 @@ def create_ssh_client(hostname, port, username, password=None, key_filename=None
     except paramiko.AuthenticationException:
         st.error("Authentication failed, please verify your credentials")
         return None
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {str(e)}")
+        return None
     return ssh_client
+
+
 
 def run_commands(ssh_client, server):
     address = server['address']
@@ -97,7 +107,7 @@ def run_commands(ssh_client, server):
     commands = server['commands']
 
     # Creating a new SSH session from the original server
-    ssh_cmd = f"ssh {username}@{address}"
+    ssh_cmd = f"ssh -o StrictHostKeyChecking=no {username}@{address}"
     if server_password:
         ssh_cmd = f"sshpass -p {server_password} {ssh_cmd}"
     
@@ -107,13 +117,14 @@ def run_commands(ssh_client, server):
 
     for command in commands:
         shell.send(f"{command}\n")
-        time.sleep(10)  # wait for 10 seconds for the command to execute
+        time.sleep(5)  # wait for 10 seconds for the command to execute
 
     shell.send("exit\n")  # exit from the SSH session to the target server
     time.sleep(0.5)
     output = shell.recv(10000).decode()
     st.text(output)
     shell.close()
+
 
 # Save configuration and tests
 def save_config():
@@ -161,7 +172,6 @@ def server_input_form(servers, editing_index, key, title, save_function):
 
 # Display added servers
 def display_servers(servers, editing_index_key, section, delete_function, rerun_function):
-    to_delete = st.empty()  # Placeholder for delete buttons
     for i, server in enumerate(servers):
         st.write(f"Server {i+1}: {server['address']}")
         st.write(f"Username: {server['username']}")
@@ -172,11 +182,11 @@ def display_servers(servers, editing_index_key, section, delete_function, rerun_
             col1, col2 = st.columns([1, 1])
             edit_button = col1.button("Edit", key=f"edit_{section}_{i}")
             delete_button = col2.button("Delete", key=f"delete_{section}_{i}")
-            
+
         if edit_button:
             st.session_state[editing_index_key] = i
             rerun_function()
-            
+
         if delete_button:
             del servers[i]
             delete_function()
@@ -194,7 +204,13 @@ if st.button("Start Configuration"):
     with st.spinner("Configuring devices..."):
         try:
             # Create SSH client to the original server
-            original_ssh_client = create_ssh_client(st.session_state.hostname, st.session_state.port, st.session_state.username, password, st.session_state.key_filename_path)
+            original_ssh_client = create_ssh_client(
+                st.session_state.hostname,
+                st.session_state.port,
+                st.session_state.username,
+                st.session_state.password,
+                st.session_state.key_filename_path
+            )
 
             if original_ssh_client is None:
                 st.error("Failed to create SSH client to the original server.")
@@ -224,7 +240,13 @@ if st.button("Start Testing"):
     with st.spinner("Testing devices..."):
         try:
             # Create SSH client to the original server
-            original_ssh_client = create_ssh_client(st.session_state.hostname, st.session_state.port, st.session_state.username, password, st.session_state.key_filename_path)
+            original_ssh_client = create_ssh_client(
+                st.session_state.hostname,
+                st.session_state.port,
+                st.session_state.username,
+                st.session_state.password,
+                st.session_state.key_filename_path
+            )
 
             if original_ssh_client is None:
                 st.error("Failed to create SSH client to the original server.")

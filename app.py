@@ -3,6 +3,7 @@ import paramiko
 import os
 import json
 import time
+import select 
 
 # Streamlit App Title and Description
 st.title("SSH Commander Tool")
@@ -97,34 +98,44 @@ def create_ssh_client(hostname, port, username, password=None, key_filename=None
         st.error(f"An unexpected error occurred: {str(e)}")
         return None
     return ssh_client
-
-
-
 def run_commands(ssh_client, server):
     address = server['address']
     username = server['username']
     server_password = server.get('password')
     commands = server['commands']
 
-    # Creating a new SSH session from the original server
     ssh_cmd = f"ssh -o StrictHostKeyChecking=no {username}@{address}"
     if server_password:
         ssh_cmd = f"sshpass -p {server_password} {ssh_cmd}"
     
     shell = ssh_client.invoke_shell()
+    shell.setblocking(0)
     shell.send(f"{ssh_cmd}\n")
-    time.sleep(1)  # wait for the connection to establish
 
     for command in commands:
         shell.send(f"{command}\n")
-        time.sleep(5)  # wait for 10 seconds for the command to execute
+        output = ""
+        while not output.strip().endswith("$"):  # Adjust the ending prompt as per your server's command prompt
+            ready, _, _ = select.select([shell], [], [], 0.5)
+            if ready:
+                output += shell.recv(10000).decode()  # Adjust buffer size as needed
+            else:
+                # Handle timeout or no data scenario
+                break
+        st.text(output)
 
-    shell.send("exit\n")  # exit from the SSH session to the target server
-    time.sleep(0.5)
-    output = shell.recv(10000).decode()
+    shell.send("exit\n")
+    output = ""
+    while not output.strip().endswith("$"):  # Adjust the ending prompt as per your server's command prompt
+        ready, _, _ = select.select([shell], [], [], 0.5)
+        if ready:
+            output += shell.recv(10000).decode()  # Adjust buffer size as needed
+        else:
+            # Handle timeout or no data scenario
+            break
     st.text(output)
-    shell.close()
 
+    shell.close()
 
 # Save configuration and tests
 def save_config():

@@ -8,7 +8,8 @@ tempDir/
 *.ini
 *.json
 backup/
-
+gold/
+*.pem 
 # C extensions
 *.so
 
@@ -144,5 +145,3 @@ cython_debug/
 
 # JupyterLab
 .jupyterlab-debugger/
-
-

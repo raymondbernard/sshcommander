@@ -88,7 +88,7 @@ ray.bernard@outlook.com
 
 ## Demo
 
-For a visual demonstration of how SSH Commander works, you can watch our demo video here: [YouTube Demo](https://youtube.com/demo-link)
+For a visual demonstration of how SSH Commander works, you can watch our demo video here: [YouTube Demo](https://youtu.be/4gGqr2Olrpc)
 
 ## License
 

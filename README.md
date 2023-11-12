@@ -11,14 +11,53 @@ The main purpose of SSH Commander is to simplify the process of configuring and 
 - Add, edit, and delete test configurations.
 - Execute a series of test commands on multiple servers.
 
+
 ## Installation
 
-1. Ensure that you have Python installed on your machine. If not, download and install Python from [python.org](https://www.python.org/).
-2. Download or clone this repository to your local machine.
-3. Navigate to the project directory in your terminal or command prompt.
-4. Run the command `pip install -r requirements.txt` to install the required packages.
-5. Start the Streamlit application by running `streamlit run app.py`.
+To install SSH Commander from the GitHub repository, follow these steps:
 
+### Cloning the Repository
+
+First, clone the repository from GitHub:
+
+```bash
+git clone https://github.com/raymondbernard/sshcommander.git
+cd sshcommander
+```
+
+### Setting up a Virtual Environment
+
+It's recommended to use a virtual environment to avoid conflicts with other Python packages. Create and activate a virtual environment:
+
+#### On Windows:
+
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+#### On macOS/Linux:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Installing Dependencies
+
+Install the necessary dependencies (ensure your virtual environment is activated):
+
+```bash
+pip install -r requirements.txt
+```
+
+### Running SSH Commander
+
+After the installation is complete, you can run SSH Commander:
+
+```bash
+streamlit run app.py
+```
 ## Usage
 
 ### Configuration
@@ -45,3 +84,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 By Raymond Bernard
 ray.bernard@outlook.com
+
+
+## Demo
+
+For a visual demonstration of how SSH Commander works, you can watch our demo video here: [YouTube Demo](https://youtube.com/demo-link)
+
+## License
+
+This project is licensed under the terms of the [LICENSE](LICENSE) file.

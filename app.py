@@ -98,6 +98,7 @@ def create_ssh_client(hostname, port, username, password=None, key_filename=None
         st.error(f"An unexpected error occurred: {str(e)}")
         return None
     return ssh_client
+
 def run_commands(ssh_client, server):
     address = server['address']
     username = server['username']
@@ -114,6 +115,7 @@ def run_commands(ssh_client, server):
 
     for command in commands:
         shell.send(f"{command}\n")
+        time.sleep(2)
         output = ""
         while not output.strip().endswith("$"):  # Adjust the ending prompt as per your server's command prompt
             ready, _, _ = select.select([shell], [], [], 0.5)

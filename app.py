@@ -119,13 +119,14 @@ def run_commands(ssh_client, server):
     config_title = server['config_title']
     config_description = server['config_description']
 
-    st.markdown(f"<h2 style='font-weight:bold;'>{config_title}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='font-weight:bold;'>{config_description}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='font-weight:bold;'>{config_title}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='font-weight:bold;'>{config_description}</h4>", unsafe_allow_html=True)
     ssh_cmd = f"ssh -o StrictHostKeyChecking=no {username}@{address}"
     if server_password:
         ssh_cmd = f"sshpass -p {server_password} {ssh_cmd}"
     
     shell = ssh_client.invoke_shell()
+    
     shell.setblocking(0)
     shell.send(f"{ssh_cmd}\n")
 

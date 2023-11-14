@@ -6,7 +6,7 @@ SSH Commander is a Streamlit-based application that facilitates the configuratio
 
 The main purpose of SSH Commander is to simplify the process of configuring and testing servers. It allows users to:
 
-- Add, edit, and delete server configurations.
+- Add, edit, and delete server/device configurations.
 - Execute a series of commands on multiple servers.
 - Add, edit, and delete test configurations.
 - Execute a series of test commands on multiple servers.

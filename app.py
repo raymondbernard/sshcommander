@@ -37,7 +37,7 @@ def init_session_variables():
 
 def ssh_conn_form():
     # SSH Connection Information
-    with st.expander("SSH Connection Information"):
+    with st.expander("Add SSH Connection Information"):
         st.session_state.hostname = st.text_input("Hostname (Original Server)", st.session_state.hostname)
         st.session_state.port = st.number_input("Port (Original Server)", min_value=1, max_value=65535, value=st.session_state.port)
         st.session_state.username = st.text_input("Username (Original Server)", st.session_state.username)
@@ -56,7 +56,7 @@ def ssh_conn_form():
         st.session_state.server_password = ''
         
     # Configuration Section
-    with st.expander("Setup server configuration section"):            
+    with st.expander("Setup server/device configuration section"):            
         server_input_form(st.session_state.servers, st.session_state.editing_index, 'server_form', "Configure your devices", save_config)
 # Define the add_configuration function here
 def add_configuration(server, title, description, commands):
@@ -94,7 +94,6 @@ def save_uploaded_file(uploaded_file):
     except Exception as e:
         st.error(f"Error saving file: {e}")
         return None
-
 
 # SSH Functions
 def create_ssh_client(hostname, port, username, password=None, key_filename=None):
@@ -187,7 +186,7 @@ def server_input_form(servers, editing_index, key, title, save_function):
     with st.form(key=key):
         st.subheader(title)
         editing_server = servers[editing_index] if editing_index is not None else {}
-        address = st.text_input("Address of device", value=editing_server.get("address", st.session_state.server_address)).strip()
+        address = st.text_input("Address of server/device", value=editing_server.get("address", st.session_state.server_address)).strip()
         server_username = st.text_input("Username", value=editing_server.get("username", st.session_state.server_username)).strip()
         server_password = st.text_input("Password (optional)", type="password", value=editing_server.get("password", st.session_state.server_password)).strip()
         
@@ -223,7 +222,7 @@ def server_input_form(servers, editing_index, key, title, save_function):
         st.success("Server saved successfully!")
 
 def buttons():
-    with st.expander("View Saved Configurations or and Edit or Delete"):
+    with st.expander("View Saved Configurations and or Edit/Delete"):
         display_servers(st.session_state.servers, 'editing_index', 'config', save_config, st.experimental_rerun)
     # Action Button for Configuration
     if st.button("Start Configuration"):
@@ -279,10 +278,10 @@ def display_servers(servers, editing_index_key, section, delete_function, rerun_
 
 def test_form():
     # Testing Section
-    with st.expander("Testing"):
+    with st.expander("Setup Testing"):
 
         server_input_form(st.session_state.tests, st.session_state.editing_test_index, 'test_form', "Configure a Test", save_tests)
-    with st.expander("Added Tests"):
+    with st.expander("View saved Tests and or  Edit / Delete"):
         display_servers(st.session_state.tests, 'editing_test_index', 'test', save_tests, st.experimental_rerun)
         
     # Action Button for Testing
@@ -311,10 +310,8 @@ def test_form():
 def main():
     display_app_header()
     init_session_variables()
-    # Load existing configuration and tests
     load_config()
     load_tests()
-    #invoke ssh connection form 
     ssh_conn_form()
     buttons()
     test_form()

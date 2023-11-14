@@ -5,35 +5,59 @@ import json
 import time
 import select 
 
+# Constants
+CONFIG_FILE = "config.json"
+TEST_FILE = "test.json"
 
-# Streamlit App Title and Description
-st.title("SSH Commander Tool")
-st.write("This tool helps to configure and test servers/network devices via SSH. Please provide the necessary information below to get started.")
+#App Title and Description
+def display_app_header():
+    st.title("SSH Commander Tool")
+    st.write("This tool helps to configure & test your servers/network devices via SSH.")
 
 # Initialize session state variables
-if 'hostname' not in st.session_state:
-    st.session_state.hostname = ''
-if 'port' not in st.session_state:
-    st.session_state.port = 22
-if 'username' not in st.session_state:
-    st.session_state.username = ''
-if 'password' not in st.session_state:
-    st.session_state.password = ''
-if 'key_filename_path' not in st.session_state:
-    st.session_state.key_filename_path = None
-if 'servers' not in st.session_state:
-    st.session_state.servers = []
-if 'editing_index' not in st.session_state:
-    st.session_state.editing_index = None
-if 'tests' not in st.session_state:
-    st.session_state.tests = []
-if 'editing_test_index' not in st.session_state:
-    st.session_state.editing_test_index = None
+def init_session_variables():
+    if 'hostname' not in st.session_state:
+        st.session_state.hostname = ''
+    if 'port' not in st.session_state:
+        st.session_state.port = 22
+    if 'username' not in st.session_state:
+        st.session_state.username = ''
+    if 'password' not in st.session_state:
+        st.session_state.password = ''
+    if 'key_filename_path' not in st.session_state:
+        st.session_state.key_filename_path = None
+    if 'servers' not in st.session_state:
+        st.session_state.servers = []
+    if 'editing_index' not in st.session_state:
+        st.session_state.editing_index = None
+    if 'tests' not in st.session_state:
+        st.session_state.tests = []
+    if 'editing_test_index' not in st.session_state:
+        st.session_state.editing_test_index = None
 
-# File to store the configuration and tests
-config_file = "config.json"
-test_file = "test.json"
+def ssh_conn_form():
+    # SSH Connection Information
+    with st.expander("SSH Connection Information"):
+        st.session_state.hostname = st.text_input("Hostname (Original Server)", st.session_state.hostname)
+        st.session_state.port = st.number_input("Port (Original Server)", min_value=1, max_value=65535, value=st.session_state.port)
+        st.session_state.username = st.text_input("Username (Original Server)", st.session_state.username)
+        key_filename = st.file_uploader("Private Key File (Original Server)", type=['pem'])
+        st.session_state.password = st.text_input("Password (Original Server, if required)", type="password", help="Leave empty if using a private key")
 
+        # Save the uploaded private key file
+    if key_filename is not None:
+        st.session_state.key_filename_path = save_uploaded_file(key_filename)
+    # Initialize session state for server details
+    if 'server_address' not in st.session_state:
+        st.session_state.server_address = ''
+    if 'server_username' not in st.session_state:
+        st.session_state.server_username = ''
+    if 'server_password' not in st.session_state:
+        st.session_state.server_password = ''
+        
+    # Configuration Section
+    with st.expander("Setup server configuration section"):            
+        server_input_form(st.session_state.servers, st.session_state.editing_index, 'server_form', "Configure your devices", save_config)
 # Define the add_configuration function here
 def add_configuration(server, title, description, commands):
     if 'configurations' not in server:
@@ -45,8 +69,8 @@ def add_configuration(server, title, description, commands):
     })
 # Load existing configuration and tests
 def load_config():
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
             data = json.load(f)
             st.session_state.servers = data.get("servers", [])
             st.session_state.hostname = data.get("hostname", "")
@@ -54,21 +78,10 @@ def load_config():
             st.session_state.username = data.get("username", "")
 
 def load_tests():
-    if os.path.exists(test_file):
-        with open(test_file, "r") as f:
+    if os.path.exists(TEST_FILE):
+        with open(TEST_FILE, "r") as f:
             data = json.load(f)
             st.session_state.tests = data.get("tests", [])
-
-load_config()
-load_tests()
-
-# SSH Connection Information
-with st.expander("SSH Connection Information"):
-    st.session_state.hostname = st.text_input("Hostname (Original Server)", st.session_state.hostname)
-    st.session_state.port = st.number_input("Port (Original Server)", min_value=1, max_value=65535, value=st.session_state.port)
-    st.session_state.username = st.text_input("Username (Original Server)", st.session_state.username)
-    key_filename = st.file_uploader("Private Key File (Original Server)", type=['pem'])
-    st.session_state.password = st.text_input("Password (Original Server, if required)", type="password", help="Leave empty if using a private key")
 
 # Function to handle file upload and save it temporarily
 def save_uploaded_file(uploaded_file):
@@ -82,9 +95,6 @@ def save_uploaded_file(uploaded_file):
         st.error(f"Error saving file: {e}")
         return None
 
-# Save the uploaded private key file
-if key_filename is not None:
-    st.session_state.key_filename_path = save_uploaded_file(key_filename)
 
 # SSH Functions
 def create_ssh_client(hostname, port, username, password=None, key_filename=None):
@@ -116,8 +126,6 @@ def run_commands(ssh_client, server):
     config_title = server['config_title']
     config_description = server['config_description']
     commands = server['commands']
-
-
     st.markdown(f"<h3 style='font-weight:bold;'>{config_title}</h3>", unsafe_allow_html=True)
     st.markdown(f"<h4 style='font-weight:bold;'>{config_description}</h4>", unsafe_allow_html=True)
     ssh_cmd = f"ssh -o StrictHostKeyChecking=no {username}@{address}"
@@ -155,7 +163,7 @@ def run_commands(ssh_client, server):
 
     shell.close()
 
-# Save configuration and tests
+# Save configuration 
 def save_config():
     data = {
         "servers": st.session_state.servers,
@@ -163,45 +171,37 @@ def save_config():
         "port": st.session_state.port,
         "username": st.session_state.username,
     }
-    with open(config_file, "w") as f:
+    with open(CONFIG_FILE, "w") as f:
         json.dump(data, f)
 
+# Save tests
 def save_tests():
     data = {
         "tests": st.session_state.tests,
     }
-    with open(test_file, "w") as f:
+    with open(TEST_FILE, "w") as f:
         json.dump(data, f)
-# Initialize session state for server details
-if 'server_address' not in st.session_state:
-    st.session_state.server_address = ''
-if 'server_username' not in st.session_state:
-    st.session_state.server_username = ''
-if 'server_password' not in st.session_state:
-    st.session_state.server_password = ''
 
 # Server Information Input
 def server_input_form(servers, editing_index, key, title, save_function):
     with st.form(key=key):
         st.subheader(title)
         editing_server = servers[editing_index] if editing_index is not None else {}
-        address = st.text_input("Address", value=editing_server.get("address", st.session_state.server_address)).strip()
+        address = st.text_input("Address of device", value=editing_server.get("address", st.session_state.server_address)).strip()
         server_username = st.text_input("Username", value=editing_server.get("username", st.session_state.server_username)).strip()
         server_password = st.text_input("Password (optional)", type="password", value=editing_server.get("password", st.session_state.server_password)).strip()
-  
         
         # New fields for configuration title and description
         config_title = st.text_input("Configuration Title", value=editing_server.get("config_title", ""))
         config_description = st.text_area("Configuration Description", value=editing_server.get("config_description", ""))
         commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", []))).strip()
-        submit_button = st.form_submit_button("Save Server")
+        submit_button = st.form_submit_button("Save configuration")
 
     if submit_button:
         # Update session state with the new values
         st.session_state.server_address = address
         st.session_state.server_username = server_username
         st.session_state.server_password = server_password
-
         # Gather server information
         server_info = {
             "address": address,
@@ -219,10 +219,40 @@ def server_input_form(servers, editing_index, key, title, save_function):
             st.session_state.editing_index = None
         else:
             servers.append(server_info)
-
         save_function()
         st.success("Server saved successfully!")
 
+def buttons():
+    with st.expander("View Saved Configurations or and Edit or Delete"):
+        display_servers(st.session_state.servers, 'editing_index', 'config', save_config, st.experimental_rerun)
+    # Action Button for Configuration
+    if st.button("Start Configuration"):
+        with st.spinner("Configuring devices..."):
+            try:
+                # Create SSH client to the original server
+                original_ssh_client = create_ssh_client(
+                    st.session_state.hostname,
+                    st.session_state.port,
+                    st.session_state.username,
+                    st.session_state.password,
+                    st.session_state.key_filename_path
+                )
+
+                if original_ssh_client is None:
+                    st.error("Failed to create SSH client to the original server.")
+                    st.stop()
+
+                # Run commands on each server through the original server
+                for server in st.session_state.servers:
+                    st.write(f"Configuring {server['address']} through {st.session_state.hostname}...")
+                    run_commands(original_ssh_client, server)
+
+                st.success("Configuration completed successfully!")
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+            finally:
+                if 'original_ssh_client' in locals() and original_ssh_client is not None:
+                    original_ssh_client.close()
 
 # Display added servers
 def display_servers(servers, editing_index_key, section, delete_function, rerun_function):
@@ -247,68 +277,47 @@ def display_servers(servers, editing_index_key, section, delete_function, rerun_
             rerun_function()
         st.write("---")
 
-# Configuration Section
-server_input_form(st.session_state.servers, st.session_state.editing_index, 'server_form', "Add / Edit a Server", save_config)
+def test_form():
+    # Testing Section
+    with st.expander("Testing"):
 
-with st.expander("Added Servers"):
-    display_servers(st.session_state.servers, 'editing_index', 'config', save_config, st.experimental_rerun)
+        server_input_form(st.session_state.tests, st.session_state.editing_test_index, 'test_form', "Configure a Test", save_tests)
+    with st.expander("Added Tests"):
+        display_servers(st.session_state.tests, 'editing_test_index', 'test', save_tests, st.experimental_rerun)
+        
+    # Action Button for Testing
+    if st.button("Start Testing"):
+        with st.spinner("Testing devices..."):
+            try:
+                # Create SSH client to the original server
+                original_ssh_client = create_ssh_client(st.session_state.hostname, st.session_state.port, st.session_state.username, st.session_state.password, st.session_state.key_filename_path)
 
-# Action Button for Configuration
-if st.button("Start Configuration"):
-    with st.spinner("Configuring devices..."):
-        try:
-            # Create SSH client to the original server
-            original_ssh_client = create_ssh_client(
-                st.session_state.hostname,
-                st.session_state.port,
-                st.session_state.username,
-                st.session_state.password,
-                st.session_state.key_filename_path
-            )
+                if original_ssh_client is None:
+                    st.error("Failed to create SSH client to the original server.")
+                    st.stop()
 
-            if original_ssh_client is None:
-                st.error("Failed to create SSH client to the original server.")
-                st.stop()
+                # Run commands on each server through the original server
+                for test in st.session_state.tests:
+                    st.write(f"Testing {test['address']} through {st.session_state.hostname}...")
+                    run_commands(original_ssh_client, test)
+                st.success("Testing completed successfully!")
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+            finally:
+                if 'original_ssh_client' in locals() and original_ssh_client is not None:
+                    original_ssh_client.close()
 
-            # Run commands on each server through the original server
-            for server in st.session_state.servers:
-                st.write(f"Configuring {server['address']} through {st.session_state.hostname}...")
-                run_commands(original_ssh_client, server)
+# Main Application Logic
+def main():
+    display_app_header()
+    init_session_variables()
+    # Load existing configuration and tests
+    load_config()
+    load_tests()
+    #invoke ssh connection form 
+    ssh_conn_form()
+    buttons()
+    test_form()
 
-            st.success("Configuration completed successfully!")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-        finally:
-            if 'original_ssh_client' in locals() and original_ssh_client is not None:
-                original_ssh_client.close()
-
-# Testing Section
-st.subheader("Testing")
-server_input_form(st.session_state.tests, st.session_state.editing_test_index, 'test_form', "Add / Edit a Test", save_tests)
-
-with st.expander("Added Tests"):
-    display_servers(st.session_state.tests, 'editing_test_index', 'test', save_tests, st.experimental_rerun)
-    
-# Action Button for Testing
-if st.button("Start Testing"):
-    with st.spinner("Testing devices..."):
-        try:
-            # Create SSH client to the original server
-            original_ssh_client = create_ssh_client(st.session_state.hostname, st.session_state.port, st.session_state.username, st.session_state.password, st.session_state.key_filename_path)
-
-            if original_ssh_client is None:
-                st.error("Failed to create SSH client to the original server.")
-                st.stop()
-
-            # Run commands on each server through the original server
-            for test in st.session_state.tests:
-                st.write(f"Testing {test['address']} through {st.session_state.hostname}...")
-                run_commands(original_ssh_client, test)
-
-            st.success("Testing completed successfully!")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-        finally:
-            if 'original_ssh_client' in locals() and original_ssh_client is not None:
-                original_ssh_client.close()
-
+if __name__ == "__main__":
+    main()

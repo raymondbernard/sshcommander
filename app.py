@@ -115,9 +115,10 @@ def run_commands(ssh_client, server):
     address = server['address']
     username = server['username']
     server_password = server.get('password')
-    commands = server['commands']
     config_title = server['config_title']
     config_description = server['config_description']
+    commands = server['commands']
+
 
     st.markdown(f"<h3 style='font-weight:bold;'>{config_title}</h3>", unsafe_allow_html=True)
     st.markdown(f"<h4 style='font-weight:bold;'>{config_description}</h4>", unsafe_allow_html=True)
@@ -134,9 +135,6 @@ def run_commands(ssh_client, server):
         shell.send(f"{command}\n")
         time.sleep(2)
         output = ""
-
-     
-
         while not output.strip().endswith("$"):  # Adjust the ending prompt as per your server's command prompt
             ready, _, _ = select.select([shell], [], [], 0.5)
             if ready:
@@ -211,9 +209,10 @@ def server_input_form(servers, editing_index, key, title, save_function):
             "address": address,
             "username": server_username,
             "password": server_password,
-            "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()],
             "config_title": config_title,
-            "config_description": config_description
+            "config_description": config_description,
+            "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]
+           
         }
 
         # Logic to handle the addition or update of server information

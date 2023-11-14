@@ -10,8 +10,6 @@ import select
 st.title("SSH Commander Tool")
 st.write("This tool helps to configure and test servers/network devices via SSH. Please provide the necessary information below to get started.")
 
-
-
 # Initialize session state variables
 if 'hostname' not in st.session_state:
     st.session_state.hostname = ''
@@ -290,54 +288,27 @@ server_input_form(st.session_state.tests, st.session_state.editing_test_index, '
 
 with st.expander("Added Tests"):
     display_servers(st.session_state.tests, 'editing_test_index', 'test', save_tests, st.experimental_rerun)
-
-
-    # Add UI elements for adding a configuration to the server
-    with st.form("Add Configuration"):
-        config_title = st.text_input("Configuration Title")
-        config_description = st.text_area("Configuration Description")
-        config_commands = st.text_area("Commands", "Enter commands separated by a newline")
-        submit_config = st.form_submit_button("Add Configuration")
-
-        if submit_config and config_title and config_commands:
-            # Parsing commands (assuming they are entered one per line)
-            parsed_commands = config_commands.split('\n')
-
-            add_configuration(st.session_state.servers[st.session_state.editing_index], config_title, config_description, parsed_commands)
-            st.success("Configuration added")
     
-    # Save button for the server along with its configurations
-    if st.button("Save Server and Configurations"):
-        # Logic to save the server and its configurations to config.json
-        # (This needs to be integrated with the existing server saving logic)
-    # Action Button for Testing
-        if st.button("Start Testing"):
-            with st.spinner("Testing devices..."):
-                try:
-                    # Create SSH client to the original server
-                    original_ssh_client = create_ssh_client(
-                        st.session_state.hostname,
-                        st.session_state.port,
-                        st.session_state.username,
-                        st.session_state.password,
-                        st.session_state.key_filename_path
-                    )
+# Action Button for Testing
+if st.button("Start Testing"):
+    with st.spinner("Testing devices..."):
+        try:
+            # Create SSH client to the original server
+            original_ssh_client = create_ssh_client(st.session_state.hostname, st.session_state.port, st.session_state.username, st.session_state.password, st.session_state.key_filename_path)
 
-                    if original_ssh_client is None:
-                        st.error("Failed to create SSH client to the original server.")
-                        st.stop()
+            if original_ssh_client is None:
+                st.error("Failed to create SSH client to the original server.")
+                st.stop()
 
-                    # Run commands on each test server through the original server
-                    for test in st.session_state.tests:
-                        st.write(f"Testing {test['address']} through {st.session_state.hostname}...")
-                        run_commands(original_ssh_client, test)
+            # Run commands on each server through the original server
+            for test in st.session_state.tests:
+                st.write(f"Testing {test['address']} through {st.session_state.hostname}...")
+                run_commands(original_ssh_client, test)
 
-                    st.success("Testing completed successfully!")
-                except Exception as e:
-                    st.error(f"An error occurred: {e}")
-                finally:
-                    if 'original_ssh_client' in locals() and original_ssh_client is not None:
-                        original_ssh_client.close()
-
-
+            st.success("Testing completed successfully!")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+        finally:
+            if 'original_ssh_client' in locals() and original_ssh_client is not None:
+                original_ssh_client.close()
 

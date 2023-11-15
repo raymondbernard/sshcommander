@@ -190,15 +190,9 @@ def server_input_form(servers, editing_index, key, title, save_function):
         server_username = st.text_input("Username", value=editing_server.get("username", st.session_state.server_username)).strip()
         server_password = st.text_input("Password (optional)", type="password", value=editing_server.get("password", st.session_state.server_password)).strip()
         commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", []))).strip()
-
-        # # New fields for configuration title and description
-        # default_description = editing_server.get("config_description", "")
-        # config_description = st.text_area("Configuration Description", value=default_description)
-
-
         submit_button = st.form_submit_button("Save configuration")
-      # Check if the submit button has been pressed
-
+    
+    # Check if the submit button has been pressed and call the AI to fill in the configuration text
     if submit_button:
             with st.spinner('Waiting for AI response...'):
                 ai_response = Callnvidia(commands)
@@ -320,11 +314,13 @@ def test_form():
             finally:
                 if 'original_ssh_client' in locals() and original_ssh_client is not None:
                     original_ssh_client.close()
-                    
+
+# read the config.json file for markdown conversion       
 def read_json(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
 
+# process config to markdown 
 def display_servers_as_markdown(servers):
     markdown_text = ""
     for server in servers['servers']:  # Assuming 'servers' is the top-level key
@@ -338,7 +334,7 @@ def display_servers_as_markdown(servers):
         markdown_text += "\n---\n\n"  # Separator between servers
     return markdown_text
 
-
+# create a markdown of the contents of the config.json file
 def markdown_file():
     st.sidebar.button('Read Config', on_click=lambda: st.session_state.update({'read_config': True}))
     if 'read_config' in st.session_state and st.session_state['read_config']:

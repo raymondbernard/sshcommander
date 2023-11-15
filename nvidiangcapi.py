@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 
 
-
 def Callnvidia(message):
     # Load environment variables from .env file
     load_dotenv()

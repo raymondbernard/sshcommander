@@ -4,6 +4,7 @@ import os
 import json
 import time
 import select 
+from  nvidiangcapi import Callnvidia
 
 # Constants
 CONFIG_FILE = "config.json"
@@ -11,7 +12,7 @@ TEST_FILE = "test.json"
 
 #App Title and Description
 def display_app_header():
-    st.title("SSH Commander Tool")
+    st.title("SSH Commander with AI")
     st.write("This tool helps to configure & test your servers/network devices via SSH.")
 
 # Initialize session state variables
@@ -63,10 +64,10 @@ def add_configuration(server, title, description, commands):
     if 'configurations' not in server:
         server['configurations'] = []
     server['configurations'].append({
-        'title': title,
         'description': description,
         'commands': commands
     })
+
 # Load existing configuration and tests
 def load_config():
     if os.path.exists(CONFIG_FILE):
@@ -122,10 +123,8 @@ def run_commands(ssh_client, server):
     address = server['address']
     username = server['username']
     server_password = server.get('password')
-    config_title = server['config_title']
     config_description = server['config_description']
     commands = server['commands']
-    st.markdown(f"<h3 style='font-weight:bold;'>{config_title}</h3>", unsafe_allow_html=True)
     st.markdown(f"<h4 style='font-weight:bold;'>{config_description}</h4>", unsafe_allow_html=True)
     ssh_cmd = f"ssh -o StrictHostKeyChecking=no {username}@{address}"
     if server_password:
@@ -181,6 +180,7 @@ def save_tests():
     with open(TEST_FILE, "w") as f:
         json.dump(data, f)
 
+
 # Server Information Input
 def server_input_form(servers, editing_index, key, title, save_function):
     with st.form(key=key):
@@ -189,13 +189,29 @@ def server_input_form(servers, editing_index, key, title, save_function):
         address = st.text_input("Address of server/device", value=editing_server.get("address", st.session_state.server_address)).strip()
         server_username = st.text_input("Username", value=editing_server.get("username", st.session_state.server_username)).strip()
         server_password = st.text_input("Password (optional)", type="password", value=editing_server.get("password", st.session_state.server_password)).strip()
-        
-        # New fields for configuration title and description
-        config_title = st.text_input("Configuration Title", value=editing_server.get("config_title", ""))
-        config_description = st.text_area("Configuration Description", value=editing_server.get("config_description", ""))
         commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", []))).strip()
-        submit_button = st.form_submit_button("Save configuration")
 
+        # # New fields for configuration title and description
+        # default_description = editing_server.get("config_description", "")
+        # config_description = st.text_area("Configuration Description", value=default_description)
+
+
+        submit_button = st.form_submit_button("Save configuration")
+      # Check if the submit button has been pressed
+
+    if submit_button:
+            with st.spinner('Waiting for AI response...'):
+                ai_response = Callnvidia(commands)
+                
+                # Debugging: Print or log the response
+                print("AI Response:", ai_response)  # Replace with logging if appropriate
+                # Update the config_description with the AI's response
+                config_description = ai_response
+
+            # Update the text area with the new description
+            st.text_area("AI's Configuration Description", value=config_description, key="updated_description")
+
+        # Additional code to handle the updated configuration
     if submit_button:
         # Update session state with the new values
         st.session_state.server_address = address
@@ -206,7 +222,6 @@ def server_input_form(servers, editing_index, key, title, save_function):
             "address": address,
             "username": server_username,
             "password": server_password,
-            "config_title": config_title,
             "config_description": config_description,
             "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]
            

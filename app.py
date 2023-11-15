@@ -38,9 +38,9 @@ def init_session_variables():
 def ssh_conn_form():
     # SSH Connection Information
     with st.expander("Add SSH Connection Information"):
-        st.session_state.hostname = st.text_input("Hostname (Original Server)", st.session_state.hostname)
+        st.session_state.hostname = st.text_input("Hostname (Original Server)", st.session_state.hostname).strip(" ")
         st.session_state.port = st.number_input("Port (Original Server)", min_value=1, max_value=65535, value=st.session_state.port)
-        st.session_state.username = st.text_input("Username (Original Server)", st.session_state.username)
+        st.session_state.username = st.text_input("Username (Original Server)", st.session_state.username).strip(" ")
         key_filename = st.file_uploader("Private Key File (Original Server)", type=['pem'])
         st.session_state.password = st.text_input("Password (Original Server, if required)", type="password", help="Leave empty if using a private key")
 

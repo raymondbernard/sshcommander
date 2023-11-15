@@ -320,6 +320,43 @@ def test_form():
             finally:
                 if 'original_ssh_client' in locals() and original_ssh_client is not None:
                     original_ssh_client.close()
+                    
+def read_json(file_path):
+    with open(file_path, 'r') as file:
+        return json.load(file)
+
+def display_servers_as_markdown(servers):
+    markdown_text = ""
+    for server in servers['servers']:  # Assuming 'servers' is the top-level key
+        markdown_text += f"### Address: {server['address']}\n"
+        markdown_text += f"**Username:** {server['username']}\n"
+        # markdown_text += f"**Password:** {server['password']}\n"
+        markdown_text += f"**Description:**\n{server['config_description']}\n\n"
+        markdown_text += "**Commands:**\n"
+        for command in server['commands']:
+            markdown_text += f"- {command}\n"
+        markdown_text += "\n---\n\n"  # Separator between servers
+    return markdown_text
+
+
+def markdown_file():
+    st.sidebar.button('Read Config', on_click=lambda: st.session_state.update({'read_config': True}))
+    if 'read_config' in st.session_state and st.session_state['read_config']:
+        config_file = 'config.json'
+        if os.path.exists(config_file):
+            config_data = read_json(config_file)
+            markdown_text = display_servers_as_markdown(config_data)
+            st.markdown(markdown_text)
+
+            # Generate a download button for the markdown content
+            st.download_button(
+                label="Download Markdown",
+                data=markdown_text,
+                file_name="server_config.md",
+                mime="text/markdown"
+            )
+        else:
+            st.error(f"File {config_file} not found.")
 
 # Main Application Logic
 def main():
@@ -330,6 +367,8 @@ def main():
     ssh_conn_form()
     buttons()
     test_form()
+    markdown_file()
+
 
 if __name__ == "__main__":
     main()

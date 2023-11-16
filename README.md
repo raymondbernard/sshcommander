@@ -25,7 +25,8 @@ The LLM is based on Meta's LLama2 code 32b
 The AI assistant requires an API key which should be stored in the `.env` file.
 # Documentation
 
-SSH Commander allows you to download your configuration configuration in markdown 
+SSH Commander allows you to download your configuration configuration in markdown.
+Click on Read Config on the left panel, then Click on download Markdown button. 
 
 ## Installation
 

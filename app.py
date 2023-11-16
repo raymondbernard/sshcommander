@@ -399,7 +399,7 @@ def markdown_file():
             st.markdown(markdown_text)
 
             # Generate a download button for the markdown content
-            st.download_button(
+            st.sidebar.download_button(
                 label="Download Markdown",
                 data=markdown_text,
                 file_name="server_config.md",

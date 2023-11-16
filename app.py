@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 # Constants
 CONFIG_FILE = "config.json"
 TEST_FILE = "test.json"
+# Modify the system message to customize the AI's configuration responses
+SYSTEM_MESSAGE = "Note we are using Nvidia's cumulus Linux distribution, just describe the commands you see.   Please keep your responses short and precise."
+# modify the url to your project
+URL = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/df2bee43-fb69-42b9-9ee5-f4eabbeaf3a8"
 
 #App Title and Description
 def display_app_header():
@@ -43,11 +47,6 @@ def callnvidia(message):
     load_dotenv()
     api_key = os.getenv("API_KEY")
 
-    url = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/df2bee43-fb69-42b9-9ee5-f4eabbeaf3a8"
-
-    # TODO 
-    # Edit the system message for better AI responses via the Gui 
-    system = "Note we are using Nvidia's cumulus Linux distribution, just describe the commands you see.   Please keep your responses short and precise."
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -58,7 +57,7 @@ def callnvidia(message):
     data = {
         "messages": [
             {
-                "content": system + message,
+                "content": SYSTEM_MESSAGE + message,
                 "role": "user"
             }
         ],
@@ -68,7 +67,7 @@ def callnvidia(message):
         "stream": True
     }
 
-    response = requests.post(url, headers=headers, json=data, stream=True)
+    response = requests.post(URL, headers=headers, json=data, stream=True)
 
     complete_message = ''
     for line in response.iter_lines():
@@ -83,7 +82,6 @@ def callnvidia(message):
             # Remove the "data: " prefix if present
             if decoded_line.startswith('data: '):
                 decoded_line = decoded_line[6:]
-
             try:
                 json_line = json.loads(decoded_line)
                 for choice in json_line['choices']:
@@ -189,7 +187,6 @@ def run_commands(ssh_client, server):
         ssh_cmd = f"sshpass -p {server_password} {ssh_cmd}"
     
     shell = ssh_client.invoke_shell()
-    
     shell.setblocking(0)
     shell.send(f"{ssh_cmd}\n")
 
@@ -361,7 +358,6 @@ def test_form():
                 if original_ssh_client is None:
                     st.error("Failed to create SSH client to the original server.")
                     st.stop()
-
                 # Run commands on each server through the original server
                 for test in st.session_state.tests:
                     st.write(f"Testing {test['address']} through {st.session_state.hostname}...")

@@ -17,6 +17,12 @@ SSH Commander integrates an AI assistant to generate configuration descriptions 
 
 When saving a new configuration, the commands are sent to an AI API which returns a summarized description of what the commands are intended to configure. This provides an automated way to document the purpose of each configuration.
 
+If you need more control over AI responses please modify the system message in the app.py 
+
+### Configuration
+We are using the nvidia api as our AI platform to generate configuration descriptions.
+The LLM is based on Meta's LLama2 code 32b 
+The AI assistant requires an API key which should be stored in the `.env` file.
 # Documentation
 
 SSH Commander allows you to download your configuration configuration in markdown 

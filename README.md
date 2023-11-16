@@ -23,6 +23,8 @@ If you need more control over AI responses please modify the system message in t
 We are using the nvidia api as our AI platform to generate configuration descriptions.
 The LLM is based on Meta's LLama2 code 32b 
 The AI assistant requires an API key which should be stored in the `.env` file.
+- You will need to update the URL in app.py.
+
 # Documentation
 
 SSH Commander allows you to download your configuration configuration in markdown.

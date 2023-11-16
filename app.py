@@ -11,15 +11,61 @@ from openai import OpenAI
 # Constants
 CONFIG_FILE = "config.json"
 TEST_FILE = "test.json"
+CONFIG_AI_FILE = "config_ia.json"
 # Modify the system message to customize the AI's configuration responses
-SYSTEM_MESSAGE = "Note we are using Nvidia's cumulus Linux distribution, just describe the commands you see.   Please keep your responses short and precise."
+DEFAULT_SYSTEM_MESSAGE  = "Note we are using Nvidia's cumulus Linux distribution, just describe the commands you see.   Please keep your responses short and precise."
 # modify the url to your project
 ## Switch between nvidia or openai 
 
 # AI  = "call_openai"
 ## command out below if ou use call_openai 
 URL = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/df2bee43-fb69-42b9-9ee5-f4eabbeaf3a8" ## user for only Nvidia 
-AI = "call_nvidi" 
+DEFAULT_AI = "call_nvidi" 
+
+def load_ai_config():
+    try:
+        with open('config_ai.json', 'r') as file:
+            config = json.load(file)
+            config['AI'] = config.get('AI', DEFAULT_AI)
+            config['SYSTEM_MESSAGE'] = config.get('SYSTEM_MESSAGE', DEFAULT_SYSTEM_MESSAGE)
+            if config['AI'] == "call_nvidi":
+                config['URL'] = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/df2bee43-fb69-42b9-9ee5-f4eabbeaf3a8"
+            return config
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        # Return default configuration if any error occurs
+        return {"AI": DEFAULT_AI, "SYSTEM_MESSAGE": DEFAULT_SYSTEM_MESSAGE}
+
+
+def save_ai_config(config):
+    with open(CONFIG_AI_FILE, 'w') as file:
+        json.dump(config, file)
+
+# Streamlit sidebar interface for changing AI configuration
+
+
+def config_ai_interface():
+    st.sidebar.title("AI Configuration")
+    config = load_ai_config()
+
+    if config is not None and 'AI' in config:
+        ai_choice = st.sidebar.selectbox(
+            "Choose AI Service", 
+            ["call_nvidi", "call_openai"], 
+            index=["call_nvidi", "call_openai"].index(config['AI'])
+        )
+    else:
+        st.sidebar.error("Configuration not found or is invalid.")
+        return  # Exit the function
+
+    system_message = st.sidebar.text_area("System Message", value=config.get('SYSTEM_MESSAGE', DEFAULT_SYSTEM_MESSAGE))
+    if st.sidebar.button("Save Configuration"):
+        new_config = {
+            "AI": ai_choice,
+            "SYSTEM_MESSAGE": system_message
+        }
+        save_ai_config(new_config)
+        st.sidebar.success("AI Configuration saved!")
 
 
 #App Title and Description
@@ -54,7 +100,7 @@ def call_nvidia(message):
     # Load environment variables from .env file
     load_dotenv()
     api_key = os.getenv("API_KEY")
-
+    config = load_ai_config()
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Accept": "text/event-stream",
@@ -64,7 +110,7 @@ def call_nvidia(message):
     data = {
         "messages": [
             {
-                "content": SYSTEM_MESSAGE + message,
+                "content": config['SYSTEM_MESSAGE'] + message,
                 "role": "user"
             }
         ],
@@ -104,13 +150,13 @@ def call_openai(message):
     # Load environment variables from .env file
     load_dotenv()
     client = OpenAI()
-    
+    config = load_ai_config()
     response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {
         "role": "system",
-        "content": SYSTEM_MESSAGE
+        "content": config['SYSTEM_MESSAGE']
         },
         {
         "role": "user",
@@ -417,16 +463,19 @@ def read_json(file_path):
 # process config to markdown 
 def display_servers_as_markdown(servers):
     markdown_text = ""
-    for server in servers['servers']:  # Assuming 'servers' is the top-level key
-        markdown_text += f"### Device Address: {server['address']}\n"
-        markdown_text += f"**Username:** {server['username']}\n"
-        # markdown_text += f"**Password:** {server['password']}\n"
-        markdown_text += f"\n**Description:**\n{server['config_description']}\n\n"
-        markdown_text += "**Commands:**\n"
-        for command in server['commands']:
-            markdown_text += f"- {command}\n"
-        markdown_text += "\n---\n\n"  # Separator between servers
-    return markdown_text
+    if servers:
+        for server in servers['servers']:  # Assuming 'servers' is the top-level key
+            markdown_text += f"### Device Address: {server['address']}\n"
+            markdown_text += f"**Username:** {server['username']}\n"
+            # markdown_text += f"**Password:** {server['password']}\n"
+            markdown_text += f"\n**Description:**\n{server['config_description']}\n\n"
+            markdown_text += "**Commands:**\n"
+            for command in server['commands']:
+                markdown_text += f"- {command}\n"
+            markdown_text += "\n---\n\n"  # Separator between servers
+        return markdown_text
+    elif servers == None: 
+        st.write("please configure your devices and servers")
 
 # create a markdown of the contents of the config.json file
 def markdown_file():
@@ -446,13 +495,15 @@ def markdown_file():
                 mime="text/markdown"
             )
         else:
-            st.error(f"File {config_file} not found.")
+            st.error(f"Please configure your devices first. Before you read the config, since the File {config_file} was not yet created.")
 
 # Main Application Logic
 def main():
     display_app_header()
     init_session_variables()
     load_config()
+    load_ai_config()
+    config_ai_interface()
     load_tests()
     ssh_conn_form()
     buttons()

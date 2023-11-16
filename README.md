@@ -10,7 +10,16 @@ The main purpose of SSH Commander is to simplify the process of configuring and 
 - Execute a series of commands on multiple servers.
 - Add, edit, and delete test configurations.
 - Execute a series of test commands on multiple servers.
-- AI will generate a configuration description for the commands sent.
+
+## AI Assistant
+
+SSH Commander integrates an AI assistant to generate configuration descriptions based on the commands entered by the user. 
+
+When saving a new configuration, the commands are sent to an AI API which returns a summarized description of what the commands are intended to configure. This provides an automated way to document the purpose of each configuration.
+
+# Documentation
+
+SSH Commander allows you to download your configuration configuration in markdown 
 
 ## Installation
 
@@ -63,11 +72,15 @@ streamlit run app.py
 ### Configuration
 
 1. Expand the "SSH Connection Information" section and input the details of the original server through which you will SSH into other servers or devices.
+
 2. Expand the "Configuration" section to add, edit, or delete server configurations.
-   - Click on "Add / Edit a Server" to input the server address, username, and the commands to be executed.
-   - Use the "Save Server" button to save the configuration.
-   - Use the "Edit" and "Delete" buttons to modify or remove existing server configurations.
+   - Click on "Add / Edit a Server" to input the server address, username, and commands to be executed.
+   - The AI will generate a description of the configuration based on the commands.
+   - Use the "Save Server" button to save the configuration along with the AI-generated description.
+   - Use the "Edit" and "Delete" buttons to modify or remove existing configurations.
+
 3. Click the "Start Configuration" button to execute the commands on all configured servers.
+
 
 ### Testing
 

@@ -22,7 +22,7 @@ If you need more control over AI responses please modify the system message in t
 ### Configuration
 We are using the nvidia api as our AI platform to generate configuration descriptions.
 The LLM is based on Meta's LLama2 code 32b 
-The AI assistant requires an API key which should be stored in the `.env` file.
+The AI assistant requires an OpenAPI key which should be stored in the `.env` file.
 - You will need to update the URL in app.py.
 
 # Documentation

@@ -14,7 +14,13 @@ TEST_FILE = "test.json"
 # Modify the system message to customize the AI's configuration responses
 SYSTEM_MESSAGE = "Note we are using Nvidia's cumulus Linux distribution, just describe the commands you see.   Please keep your responses short and precise."
 # modify the url to your project
-# URL = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/df2bee43-fb69-42b9-9ee5-f4eabbeaf3a8"
+## Switch between nvidia or openai 
+
+# AI  = "call_openai"
+## command out below if ou use call_openai 
+URL = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/df2bee43-fb69-42b9-9ee5-f4eabbeaf3a8" ## user for only Nvidia 
+AI = "call_nvidi" 
+
 
 #App Title and Description
 def display_app_header():
@@ -42,8 +48,61 @@ def init_session_variables():
     if 'editing_test_index' not in st.session_state:
         st.session_state.editing_test_index = None
 
+
 # call Nivida api to retrieve AI from LLaMa2 code 32b 
-def call_openai_gpt4(message):
+def call_nvidia(message):
+    # Load environment variables from .env file
+    load_dotenv()
+    api_key = os.getenv("API_KEY")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "text/event-stream",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "messages": [
+            {
+                "content": SYSTEM_MESSAGE + message,
+                "role": "user"
+            }
+        ],
+        "temperature": 0.2,
+        "top_p": 0.7,
+        "max_tokens": 1024,
+        "stream": True
+    }
+
+    response = requests.post(URL, headers=headers, json=data, stream=True)
+
+    complete_message = ''
+    for line in response.iter_lines():
+        if line:
+            decoded_line = line.decode('utf-8').strip()
+
+            # Check if the line is the end of data marker
+            if decoded_line == '[DONE]':
+                print("End of data stream.")
+                break
+
+            # Remove the "data: " prefix if present
+            if decoded_line.startswith('data: '):
+                decoded_line = decoded_line[6:]
+            try:
+                json_line = json.loads(decoded_line)
+                for choice in json_line['choices']:
+                    complete_message += choice['delta']['content']
+            except json.JSONDecodeError:
+                break 
+
+    print(complete_message)
+    return complete_message
+
+
+
+# call Nivida api to retrieve AI from LLaMa2 code 32b 
+def call_openai(message):
     # Load environment variables from .env file
     load_dotenv()
     client = OpenAI()
@@ -229,17 +288,48 @@ def server_input_form(servers, editing_index, key, title, save_function):
         submit_button = st.form_submit_button("Save configuration")
     
     # Check if the submit button has been pressed and call the AI to fill in the configuration text
-    if submit_button:
-            with st.spinner('Waiting for AI response...'):
-                ai_response = call_openai_gpt4(commands)
-                
-                # Debugging: Print or log the response
-                print("AI Response:", ai_response)  # Replace with logging if appropriate
-                # Update the config_description with the AI's response
-                config_description = ai_response
-
+    if submit_button and AI == "call_nvidi":
+        with st.spinner('Waiting for AI response...'):
+            ai_response = call_nvidia(commands)
+            # Debugging: Print or log the response
+            print("AI Response:", ai_response)  # Replace with logging if appropriate
+            # Update the config_description with the AI's response
+            config_description = ai_response
             # Update the text area with the new description
-            st.text_area("AI's Configuration Description", value=config_description, key="updated_description")
+        st.text_area("AI's Configuration Description", value=config_description, key="updated_description")
+    
+    if submit_button:
+        # Update session state with the new values
+        st.session_state.server_address = address
+        st.session_state.server_username = server_username
+        st.session_state.server_password = server_password
+        # Gather server information
+        server_info = {
+            "address": address,
+            "username": server_username,
+            "password": server_password,
+            "config_description": config_description,
+            "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]
+        
+        }
+            # Logic to handle the addition or update of server information
+        if editing_index is not None:
+            servers[editing_index] = server_info
+            st.session_state.editing_index = None
+        else:
+            servers.append(server_info)
+        save_function()
+        st.success("Server saved successfully!")
+
+    if AI == "callopenai":
+        with st.spinner('Waiting for AI response...'):
+            ai_response = callopenai(commands)
+            # Debugging: Print or log the response
+            print("AI Response:", ai_response)  # Replace with logging if appropriate
+            # Update the config_description with the AI's response
+            config_description = ai_response
+            # Update the text area with the new description
+        st.text_area("AI's Configuration Description", value=config_description, key="updated_description")
 
         # Additional code to handle the updated configuration
     if submit_button:
@@ -254,9 +344,7 @@ def server_input_form(servers, editing_index, key, title, save_function):
             "password": server_password,
             "config_description": config_description,
             "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]
-           
         }
-
         # Logic to handle the addition or update of server information
         if editing_index is not None:
             servers[editing_index] = server_info
@@ -281,7 +369,6 @@ def buttons():
                     st.session_state.password,
                     st.session_state.key_filename_path
                 )
-
                 if original_ssh_client is None:
                     st.error("Failed to create SSH client to the original server.")
                     st.stop()

@@ -99,8 +99,6 @@ def call_nvidia(message):
     print(complete_message)
     return complete_message
 
-
-
 # call Nivida api to retrieve AI from LLaMa2 code 32b 
 def call_openai(message):
     # Load environment variables from .env file
@@ -287,32 +285,29 @@ def server_input_form(servers, editing_index, key, title, save_function):
         commands = st.text_area("Commands (one per line)", value="\n".join(editing_server.get("commands", []))).strip()
         submit_button = st.form_submit_button("Save configuration")
     
-    # Check if the submit button has been pressed and call the AI to fill in the configuration text
-    if submit_button and AI == "call_nvidi":
-        with st.spinner('Waiting for AI response...'):
-            ai_response = call_nvidia(commands)
-            # Debugging: Print or log the response
-            print("AI Response:", ai_response)  # Replace with logging if appropriate
-            # Update the config_description with the AI's response
-            config_description = ai_response
-            # Update the text area with the new description
-        st.text_area("AI's Configuration Description", value=config_description, key="updated_description")
-    
     if submit_button:
         # Update session state with the new values
         st.session_state.server_address = address
         st.session_state.server_username = server_username
         st.session_state.server_password = server_password
+
         # Gather server information
         server_info = {
             "address": address,
             "username": server_username,
             "password": server_password,
-            "config_description": config_description,
+            "config_description": "",  # Initialize as empty
             "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]
-        
         }
-            # Logic to handle the addition or update of server information
+
+        # Check for AI response
+        if AI in ["call_nvidi", "call_openai"]:
+            ai_response = call_ai(AI, commands)
+            print("AI Response:", ai_response)  # Replace with logging if appropriate
+            server_info["config_description"] = ai_response
+            st.text_area("AI's Configuration Description", value=ai_response, key="updated_description")
+
+        # Save or update the server information
         if editing_index is not None:
             servers[editing_index] = server_info
             st.session_state.editing_index = None
@@ -321,38 +316,15 @@ def server_input_form(servers, editing_index, key, title, save_function):
         save_function()
         st.success("Server saved successfully!")
 
-    if AI == "callopenai":
-        with st.spinner('Waiting for AI response...'):
-            ai_response = callopenai(commands)
-            # Debugging: Print or log the response
-            print("AI Response:", ai_response)  # Replace with logging if appropriate
-            # Update the config_description with the AI's response
-            config_description = ai_response
-            # Update the text area with the new description
-        st.text_area("AI's Configuration Description", value=config_description, key="updated_description")
-
-        # Additional code to handle the updated configuration
-    if submit_button:
-        # Update session state with the new values
-        st.session_state.server_address = address
-        st.session_state.server_username = server_username
-        st.session_state.server_password = server_password
-        # Gather server information
-        server_info = {
-            "address": address,
-            "username": server_username,
-            "password": server_password,
-            "config_description": config_description,
-            "commands": [cmd.strip() for cmd in commands.split('\n') if cmd.strip()]
-        }
-        # Logic to handle the addition or update of server information
-        if editing_index is not None:
-            servers[editing_index] = server_info
-            st.session_state.editing_index = None
+# call nvidia or openai api 
+def call_ai(ai_type, commands):
+    with st.spinner('Waiting for AI response...'):
+        if ai_type == "call_nvidi":
+            return call_nvidia(commands)
+        elif ai_type == "call_openai":
+            return call_openai(commands)
         else:
-            servers.append(server_info)
-        save_function()
-        st.success("Server saved successfully!")
+            return "AI type not recognized"
 
 def buttons():
     with st.expander("View Saved Configurations and or Edit/Delete"):

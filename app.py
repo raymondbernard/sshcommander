@@ -6,6 +6,7 @@ import json
 import time
 import select 
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Constants
 CONFIG_FILE = "config.json"
